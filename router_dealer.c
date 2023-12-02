@@ -72,8 +72,8 @@ int main (int argc, char * argv[])
 
   
   // Defining the attributes
-  // struct mq_attr      attr;
-  // attr.mq_maxmsg = MQ_MAX_MESSAGES;
+  struct mq_attr      attr;
+  attr.mq_maxmsg = MQ_MAX_MESSAGES;
 
   // Creating the processes
   pid_t processID;
@@ -82,6 +82,24 @@ int main (int argc, char * argv[])
   pid_t clientPID;
   pid_t service1PID;
   pid_t service2PID;
+
+  // Creating the message queues
+
+  // Creating the request queue
+  attr.mq_msgsize = sizeof (MQ_REQUEST_MESSAGE);
+  Req_queue_KasraKai_24 = mq_open(client2dealer_name, O_RDWR | O_CREAT | O_EXCL, 0600, NULL);
+
+  // Creating the response queue
+  attr.mq_msgsize = sizeof (MQ_RESPONSE_MESSAGE);
+  Rsp_queue_KasraKai_24 = mq_open(worker2dealer_name, O_RDONLY | O_CREAT | O_EXCL, 0600, NULL);
+
+  // Creating the Service 1 queue
+  attr.mq_msgsize = sizeof (MQ_SERVICE_1_MESSAGE);
+  S1_queue_KasraKai_24 = mq_open(dealer2worker1_name, O_WRONLY | O_CREAT | O_EXCL, 0600, NULL);
+
+  // Creating the Service 2 queue
+  attr.mq_msgsize = sizeof (MQ_SERVICE_2_MESSAGE);
+  S2_queue_KasraKai_24 = mq_open(dealer2worker2_name, O_WRONLY | O_CREAT | O_EXCL, 0600, NULL);
 
   /* 
     Creating the client process;
@@ -117,7 +135,7 @@ int main (int argc, char * argv[])
       // -> worker (doing jobs)
       if(processID == 0){
         // TODO:
-        execlp ("./worker_s1", NULL);
+        execlp ("./worker_s1", "read_queue", dealer2worker1_name, "write_queue", worker2dealer_name, NULL);
       }
       // -> parent worker
       else {
@@ -152,7 +170,7 @@ int main (int argc, char * argv[])
         // -> worker (doing jobs)
         if(processID == 0){
           // TODO:
-          execlp ("./worker_s2", NULL);
+          execlp ("./worker_s2", "read_queue", dealer2worker2_name, "write_queue", worker2dealer_name, NULL);
         }
         // -> parent worker
         else {
@@ -165,6 +183,9 @@ int main (int argc, char * argv[])
         // We know that processID for the router currently holds the Service 2 processID, so we save it
         service2PID = processID;
         // TODO:
+
+        // Read the response queue
+        
         
 
 
@@ -172,13 +193,19 @@ int main (int argc, char * argv[])
         waitpid(clientPID, NULL, 0);
         waitpid(service1PID, NULL, 0);
         waitpid(service2PID, NULL, 0);
+
+        // Unlink the message queues
+        mq_unlink(Req_queue_KasraKai_24);
+        mq_unlink(Rsp_queue_KasraKai_24);
+        mq_unlink(S1_queue_KasraKai_24);
+        mq_unlink(S2_queue_KasraKai_24);
       }
     }
   } 
   // -> client process
   else {
     // TODO:
-    execlp ("./client", NULL);
+    execlp ("./client", "queue", client2dealer_name, NULL);
   }
 
 
