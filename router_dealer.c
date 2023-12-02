@@ -223,30 +223,69 @@ int main (int argc, char * argv[])
                 exit(EXIT_FAILURE);
               }
             }
+
+            // Else final message has been sent, so we break out of the loop
+            else if(req.Service_ID == -1 && req.Request_ID == -1 && req.data == -1){
+              // Send a final message to Worker 1
+              MQ_SERVICE_1_MESSAGE s1;
+              s1.Request_ID = -1;
+              s1.data = -1;
+
+              // Send the request to the Service 1 queue
+              for(int i = 0; i < S1_workers; i++){
+                if(mq_send(S1_queue_KasraKai_24, (char*) &s1, sizeof(s1), 0) == -1){
+                  perror("mq_send Service 1");
+                  exit(EXIT_FAILURE);
+                }
+              }
+              
+              // Send a final message to Worker 2
+              MQ_SERVICE_2_MESSAGE s2;
+              s2.Request_ID = -1;
+              s2.data = -1;
+
+              // Send the request to the Service 2 queue
+              for(int i = 0; i < S2_workers; i++){
+                if(mq_send(S2_queue_KasraKai_24, (char*) &s2, sizeof(s2), 0) == -1){
+                  perror("mq_send Service 2");
+                  exit(EXIT_FAILURE);
+                }
+              }
+              break;
+            }
           }
 
           return 0;
         }
         // -> router process
         else{
+          bool final_message_s1 = false;
+          bool final_message_s2 = false;
           // We know that processID for the router currently holds the dealer processID, so we save it
           dealerPID = processID;
 
           // Using the response queue, print the responses from the workers
+          int k = 0;
           while(mq_receive(Rsp_queue_KasraKai_24, (char*) &rsp, sizeof(rsp), NULL) != -1){
-            printf("%d -> %d\n", rsp.Request_ID, rsp.result);
+            // Check if the message is the final message for each of the workers
+            if(rsp.Request_ID == -1 && rsp.result == -1){
+              final_message_s1 = true;
+            } else if(rsp.Request_ID == -2 && rsp.result == -2) {
+              final_message_s2 = true;
+            } else{
+              printf("%d -> %d\n", rsp.Request_ID, rsp.result);
+            }
+
+            // Finish execution in case bpoth workers sent a final message
+            if(final_message_s1 && final_message_s2) break;
           }
 
           // Wait for the dealer process to be finished
           waitpid(dealerPID, NULL, 0);
-          printf("Dealer process finished\n");
           // Release resources for the children processes
           waitpid(clientPID, NULL, 0);
-          printf("Client process finished\n");
           waitpid(service1PID, NULL, 0);
-          printf("Service 1 process finished\n");
           waitpid(service2PID, NULL, 0);
-          printf("Service 2 process finished\n");
 
 
           // Close the message queues

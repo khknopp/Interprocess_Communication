@@ -80,6 +80,20 @@ int main (int argc, char * argv[])
         // Create a response message
         MQ_RESPONSE_MESSAGE response_message;
 
+        // Check if the message is the final message
+        if (s2.Request_ID == -1 && s2.data == -1)
+        {
+            response_message.Request_ID = -2;
+            response_message.result = -2;
+            if (mq_send(response, (char*) &response_message, sizeof(response_message), 0) == -1)
+            {
+                perror("mq_send Writing final response from worker 2");
+                exit(EXIT_FAILURE);
+            }
+            // Break out of the loop
+            break;
+        }
+
         // Do the job
         response_message.Request_ID = s2.Request_ID;
         response_message.result = service(s2.data);

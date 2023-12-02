@@ -76,6 +76,22 @@ int main (int argc, char * argv[])
         // Create a response message
         MQ_RESPONSE_MESSAGE response_message;
 
+        // Check if the message is the final message
+        if (s1.Request_ID == -1 && s1.data == -1)
+        {
+            response_message.Request_ID = -1;
+            response_message.result = -1;
+            // Send the message to the response queue
+            if (mq_send(response, (char*) &response_message, sizeof(response_message), 0) == -1)
+            {
+                perror("mq_send Writing final response from worker 1");
+                exit(EXIT_FAILURE);
+            }
+
+            // Break out of the loop
+            break;
+        }
+
         // Do the job
         response_message.Request_ID = s1.Request_ID;
         response_message.result = service(s1.data);

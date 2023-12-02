@@ -65,9 +65,22 @@ int main (int argc, char * argv[])
         // Send the request to the Req message queue
         if (mq_send(queue, (char*) &request, sizeof(request), 0) == -1)
         {
-            perror("mq_send Client");
+            perror("mq_send Client from message queue");
             exit(EXIT_FAILURE);
         }
+    }
+
+    // Send a message to the Req message queue to indicate that there are no more requests
+    MQ_REQUEST_MESSAGE request;
+    request.Request_ID = -1;
+    request.Service_ID = -1;
+    request.data = -1;
+
+    // Send the request to the Req message queue
+    if (mq_send(queue, (char*) &request, sizeof(request), 0) == -1)
+    {
+        perror("mq_send Client final message");
+        exit(EXIT_FAILURE);
     }
 
     // Close the message queue
