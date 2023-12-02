@@ -67,8 +67,6 @@ int main (int argc, char * argv[])
   // Creating the messages
   MQ_REQUEST_MESSAGE  req;
   MQ_RESPONSE_MESSAGE rsp;
-  MQ_SERVICE_1_MESSAGE s1;
-  MQ_SERVICE_2_MESSAGE s2;
 
   
   // Defining the attributes
@@ -87,19 +85,19 @@ int main (int argc, char * argv[])
 
   // Creating the request queue
   attr.mq_msgsize = sizeof (MQ_REQUEST_MESSAGE);
-  Req_queue_KasraKai_24 = mq_open(client2dealer_name, O_RDWR | O_CREAT | O_EXCL, 0600, NULL);
+  Req_queue_KasraKai_24 = mq_open(client2dealer_name, O_RDWR | O_CREAT | O_EXCL, 0600, &attr);
 
   // Creating the response queue
   attr.mq_msgsize = sizeof (MQ_RESPONSE_MESSAGE);
-  Rsp_queue_KasraKai_24 = mq_open(worker2dealer_name, O_RDWR | O_CREAT | O_EXCL, 0600, NULL);
+  Rsp_queue_KasraKai_24 = mq_open(worker2dealer_name, O_RDWR | O_CREAT | O_EXCL, 0600, &attr);
 
   // Creating the Service 1 queue
   attr.mq_msgsize = sizeof (MQ_SERVICE_1_MESSAGE);
-  S1_queue_KasraKai_24 = mq_open(dealer2worker1_name, O_RDWR | O_CREAT | O_EXCL, 0600, NULL);
+  S1_queue_KasraKai_24 = mq_open(dealer2worker1_name, O_RDWR | O_CREAT | O_EXCL, 0600, &attr);
 
   // Creating the Service 2 queue
   attr.mq_msgsize = sizeof (MQ_SERVICE_2_MESSAGE);
-  S2_queue_KasraKai_24 = mq_open(dealer2worker2_name, O_RDWR | O_CREAT | O_EXCL, 0600, NULL);
+  S2_queue_KasraKai_24 = mq_open(dealer2worker2_name, O_RDWR | O_CREAT | O_EXCL, 0600, &attr);
 
   /* 
     Creating the client process;
@@ -194,7 +192,7 @@ int main (int argc, char * argv[])
             s1.data = req.data;
 
             // Send the request to the Service 1 queue
-            if(mq_send(S1_queue_KasraKai_24, (char*) &s1, sizeof(req), 0) == -1){
+            if(mq_send(S1_queue_KasraKai_24, (char*) &s1, sizeof(s1), 0) == -1){
               perror("mq_send Service 1");
               exit(EXIT_FAILURE);
             }
@@ -208,7 +206,7 @@ int main (int argc, char * argv[])
             s2.data = req.data;
 
             // Send the request to the Service 2 queue
-            if(mq_send(S2_queue_KasraKai_24, (char*) &s2, sizeof(req), 0) == -1){
+            if(mq_send(S2_queue_KasraKai_24, (char*) &s2, sizeof(s2), 0) == -1){
               perror("mq_send Service 2");
               exit(EXIT_FAILURE);
             }
@@ -217,7 +215,7 @@ int main (int argc, char * argv[])
 
         // Using the response queue, print the responses from the workers
         while(mq_receive(Rsp_queue_KasraKai_24, (char*) &rsp, sizeof(rsp), NULL) != -1){
-          printf("Request ID: %d, Result: %d\n", rsp.Request_ID, rsp.result);
+          printf("%d -> %d\n", rsp.Request_ID, rsp.result);
         }
 
         

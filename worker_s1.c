@@ -45,7 +45,7 @@ int main (int argc, char * argv[])
     char* read_queue = argv[1];
 
     // Get the name of the response queue, with the name provided under argument write_queue
-    char* write_queue = argv[2];
+    char* write_queue = argv[3];
 
     // Open the read queue
     mqd_t worker = mq_open(read_queue, O_RDONLY);
