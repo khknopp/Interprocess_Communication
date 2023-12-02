@@ -24,28 +24,28 @@ typedef struct
 {
     int                     Request_ID;
     int                     Service_ID;
-    char                    data[100];
+    int                     data;
 } MQ_REQUEST_MESSAGE;
 
 // Defintion of the Rsp_queue message structure
 typedef struct
 {
     int                     Request_ID;
-    char                    Result[100];
+    int                     data;
 } MQ_RESPONSE_MESSAGE;
 
 // Defintion of the S1_queue message structure
 typedef struct
 {
     int                     Request_ID;
-    char                    data[100];
+    int                     data;
 } MQ_SERVICE_1_MESSAGE;
 
 // Defintion of the S2_queue message structure
 typedef struct
 {
     int                     Request_ID;
-    char                    data[100];
+    int                     data;
 } MQ_SERVICE_2_MESSAGE;
 
 #endif
