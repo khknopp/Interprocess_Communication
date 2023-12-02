@@ -77,12 +77,13 @@ int main (int argc, char * argv[])
   // struct mq_attr      attr;
   // attr.mq_maxmsg = MQ_MAX_MESSAGES;
 
-  // int S1_workers = N_SERV1;
-  // int S2_workers = N_SERV2;
-
   // Creating the processes
   pid_t processID;
 
+  // Defining the PID's of the processes
+  pid_t clientPID;
+  pid_t service1PID;
+  pid_t service2PID;
 
   /* 
     Creating the client process;
@@ -91,17 +92,21 @@ int main (int argc, char * argv[])
   */
   processID = fork();
 
-  // Create the correct number of workers for S1
+  // -> router process
   if(processID > 0) {
+    // We know that processID for the router currently holds the client processID, so we save it
+    clientPID = processID;
+
     /* 
-      Creating the client process;
+      Creating the Service 1 process;
         Service 1: processID = 0
         router: processID = service_1
     */ 
     processID = fork();
 
-    // Create the correct number of workers for S1
+    // -> service 1 process
     if(processID == 0){
+      // Create the correct number of workers for S1
       for(int i = 0; i < S1_workers; i++){
         // Create new process
         processID = fork();
@@ -111,34 +116,47 @@ int main (int argc, char * argv[])
         }
       }
     }
-  }
+    // -> router process
+    else {
+      // We know that processID for the router currently holds the Service 1 processID, so we save it
+      service1PID = processID;
 
-  // Create the correct number of workers for S2
-  if(processID > 0) {
-    /* 
-      Creating the client process;
-        Service 2: processID = 0
-        router: processID = service_2
-    */ 
-    processID = fork();
+      /* 
+        Creating the Service 2 process;
+          Service 2: processID = 0
+          router: processID = service_2
+      */ 
+      processID = fork();
 
-    // Create the correct number of workers for S2
-    if(processID == 0){
-      for(int i = 0; i < S2_workers; i++){
-        // Create new process
-        processID = fork();
-        // Exit the loop if the process is a child; only fork from the initial worker 1 process
-        if(processID == 0){
-          break;
+      // -> service 2 process
+      if(processID == 0){
+        // Create the correct number of workers for S2
+        for(int i = 0; i < S2_workers; i++){
+          // Create new process
+          processID = fork();
+          // Exit the loop if the process is a child; only fork from the initial worker 1 process
+          if(processID == 0){
+            break;
+          }
         }
       }
+      // -> router process
+      else {
+        // We know that processID for the router currently holds the Service 2 processID, so we save it
+        service2PID = processID;
+
+
+        // Release resources for the children processes
+        waitpid(clientPID, NULL, 0);
+        waitpid(service1PID, NULL, 0);
+        waitpid(service2PID, NULL, 0);
+      }
     }
+  } 
+  // -> client process
+  else {
+
   }
-
-
-
-
-
 
 
   return (0);
