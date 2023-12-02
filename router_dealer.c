@@ -115,6 +115,16 @@ int main (int argc, char * argv[])
           break;
         }
       }
+
+      // -> worker (doing jobs)
+      if(processID == 0){
+        // TODO:
+      }
+      // -> parent worker
+      else {
+        // Wait for all of the workers to be finished
+        while(wait(NULL) > 0);
+      }
     }
     // -> router process
     else {
@@ -139,11 +149,22 @@ int main (int argc, char * argv[])
             break;
           }
         }
+        
+        // -> worker (doing jobs)
+        if(processID == 0){
+          // TODO:
+        }
+        // -> parent worker
+        else {
+          // Wait for all of the workers to be finished
+          while(wait(NULL) > 0);
+        }
       }
       // -> router process
       else {
         // We know that processID for the router currently holds the Service 2 processID, so we save it
         service2PID = processID;
+        // TODO:
 
 
         // Release resources for the children processes
@@ -155,7 +176,7 @@ int main (int argc, char * argv[])
   } 
   // -> client process
   else {
-
+    // TODO:
   }
 
 
