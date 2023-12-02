@@ -80,6 +80,7 @@ int main (int argc, char * argv[])
   pid_t clientPID;
   pid_t service1PID;
   pid_t service2PID;
+  pid_t dealerPID;
 
   // Creating the message queues
 
@@ -180,46 +181,63 @@ int main (int argc, char * argv[])
       else {
         // We know that processID for the router currently holds the Service 2 processID, so we save it
         service2PID = processID;
-        // TODO:
 
-        // Using the request queue, send the requests to the workers
-        while(mq_receive(Req_queue_KasraKai_24, (char*) &req, sizeof(req), NULL) != -1){
-          // Check if the request is for Service 1
-          if(req.Service_ID == 1){
-            MQ_SERVICE_1_MESSAGE s1;
-            // Create a new Service 1 message
-            s1.Request_ID = req.Request_ID;
-            s1.data = req.data;
+        // Final fork to create the dealer process
+        /*
+          Creating the dealer process;
+            dealer: processID = 0
+            router: processID = dealer
+        */
+        processID = fork();
 
-            // Send the request to the Service 1 queue
-            if(mq_send(S1_queue_KasraKai_24, (char*) &s1, sizeof(s1), 0) == -1){
-              perror("mq_send Service 1");
-              exit(EXIT_FAILURE);
+        // -> dealer process
+        if(processID == 0){
+          // Using the request queue, send the requests to the workers
+          while(mq_receive(Req_queue_KasraKai_24, (char*) &req, sizeof(req), NULL) != -1){
+            // Check if the request is for Service 1
+            if(req.Service_ID == 1){
+              MQ_SERVICE_1_MESSAGE s1;
+              // Create a new Service 1 message
+              s1.Request_ID = req.Request_ID;
+              s1.data = req.data;
+
+              // Send the request to the Service 1 queue
+              if(mq_send(S1_queue_KasraKai_24, (char*) &s1, sizeof(s1), 0) == -1){
+                perror("mq_send Service 1");
+                exit(EXIT_FAILURE);
+              }
+            }
+            
+            // Check if the request is for Service 2
+            else if(req.Service_ID == 2){
+              // Create a new Service 2 message
+              MQ_SERVICE_2_MESSAGE s2;
+              s2.Request_ID = req.Request_ID;
+              s2.data = req.data;
+
+              // Send the request to the Service 2 queue
+              if(mq_send(S2_queue_KasraKai_24, (char*) &s2, sizeof(s2), 0) == -1){
+                perror("mq_send Service 2");
+                exit(EXIT_FAILURE);
+              }
             }
           }
           
-          // Check if the request is for Service 2
-          else if(req.Service_ID == 2){
-            // Create a new Service 2 message
-            MQ_SERVICE_2_MESSAGE s2;
-            s2.Request_ID = req.Request_ID;
-            s2.data = req.data;
+          return 0;
+        }
+        // -> router process
+        else{
+          // We know that processID for the router currently holds the dealer processID, so we save it
+          dealerPID = processID;
 
-            // Send the request to the Service 2 queue
-            if(mq_send(S2_queue_KasraKai_24, (char*) &s2, sizeof(s2), 0) == -1){
-              perror("mq_send Service 2");
-              exit(EXIT_FAILURE);
-            }
+          // Using the response queue, print the responses from the workers
+          while(mq_receive(Rsp_queue_KasraKai_24, (char*) &rsp, sizeof(rsp), NULL) != -1){
+            printf("%d -> %d\n", rsp.Request_ID, rsp.result);
           }
+
+          // Wait for the dealer process to be finished
+          waitpid(dealerPID, NULL, 0);
         }
-
-        // Using the response queue, print the responses from the workers
-        while(mq_receive(Rsp_queue_KasraKai_24, (char*) &rsp, sizeof(rsp), NULL) != -1){
-          printf("%d -> %d\n", rsp.Request_ID, rsp.result);
-        }
-
-        
-
 
         // Release resources for the children processes
         waitpid(clientPID, NULL, 0);
