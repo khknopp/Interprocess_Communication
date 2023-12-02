@@ -56,9 +56,83 @@ int main (int argc, char * argv[])
     // contain your goup number (to ensure uniqueness during testing)
 
 
+  // Defining the number of workers for S1 and S2
+  int S1_workers = N_SERV1;
+  int S2_workers = N_SERV2;
 
-  // Starting parent process
-  pid_t 
+  // Creating the message queues
+  mqd_t Req_queue_KasraKai_24;
+  mqd_t Rsp_queue_KasraKai_24;
+  mqd_t S1_queue_KasraKai_24;
+  mqd_t S2_queue_KasraKai_24;
+
+  // Creating the messages
+  MQ_REQUEST_MESSAGE  req;
+  MQ_RESPONSE_MESSAGE rsp;
+  MQ_SERVICE_1_MESSAGE s1;
+  MQ_SERVICE_2_MESSAGE s2;
+
+  
+  // Defining the attributes
+  // struct mq_attr      attr;
+  // attr.mq_maxmsg = MQ_MAX_MESSAGES;
+
+  // int S1_workers = N_SERV1;
+  // int S2_workers = N_SERV2;
+
+  // Creating the processes
+  pid_t processID;
+
+  /* 
+    Creating the client process;
+      client: processID = 0
+      router: processID = client
+  */
+  processID = fork();
+
+  // Create the correct number of workers for S1
+  if(processID > 0) {
+    /* 
+      Creating the client process;
+        Service 1: processID = 0
+        router: processID = service_1
+    */ 
+    processID = fork();
+
+    // Create the correct number of workers for S1
+    if(processID == 0){
+      for(int i = 0; i < S1_workers; i++){
+        // Create new process
+        processID = fork();
+        // Exit the loop if the process is a child; only fork from the initial worker 1 process
+        if(processID == 0){
+          break;
+        }
+      }
+    }
+  }
+
+  // Create the correct number of workers for S2
+  if(processID > 0) {
+    /* 
+      Creating the client process;
+        Service 2: processID = 0
+        router: processID = service_2
+    */ 
+    processID = fork();
+
+    // Create the correct number of workers for S2
+    if(processID == 0){
+      for(int i = 0; i < S2_workers; i++){
+        // Create new process
+        processID = fork();
+        // Exit the loop if the process is a child; only fork from the initial worker 1 process
+        if(processID == 0){
+          break;
+        }
+      }
+    }
+  }
 
   return (0);
 }
