@@ -140,6 +140,7 @@ int main (int argc, char * argv[])
       else {
         // Wait for all of the workers to be finished
         while(wait(NULL) > 0);
+        return 0;
       }
     }
     // -> router process
@@ -175,6 +176,7 @@ int main (int argc, char * argv[])
         else {
           // Wait for all of the workers to be finished
           while(wait(NULL) > 0);
+          return 0;
         }
       }
       // -> router process
@@ -222,7 +224,7 @@ int main (int argc, char * argv[])
               }
             }
           }
-          
+
           return 0;
         }
         // -> router process
@@ -237,25 +239,28 @@ int main (int argc, char * argv[])
 
           // Wait for the dealer process to be finished
           waitpid(dealerPID, NULL, 0);
+          printf("Dealer process finished\n");
+          // Release resources for the children processes
+          waitpid(clientPID, NULL, 0);
+          printf("Client process finished\n");
+          waitpid(service1PID, NULL, 0);
+          printf("Service 1 process finished\n");
+          waitpid(service2PID, NULL, 0);
+          printf("Service 2 process finished\n");
+
+
+          // Close the message queues
+          mq_close(Req_queue_KasraKai_24);
+          mq_close(Rsp_queue_KasraKai_24);
+          mq_close(S1_queue_KasraKai_24);
+          mq_close(S2_queue_KasraKai_24);
+
+          // Unlink the message queues
+          mq_unlink(Req_queue_KasraKai_24);
+          mq_unlink(Rsp_queue_KasraKai_24);
+          mq_unlink(S1_queue_KasraKai_24);
+          mq_unlink(S2_queue_KasraKai_24);
         }
-
-        // Release resources for the children processes
-        waitpid(clientPID, NULL, 0);
-        waitpid(service1PID, NULL, 0);
-        waitpid(service2PID, NULL, 0);
-
-
-        // Close the message queues
-        mq_close(Req_queue_KasraKai_24);
-        mq_close(Rsp_queue_KasraKai_24);
-        mq_close(S1_queue_KasraKai_24);
-        mq_close(S2_queue_KasraKai_24);
-
-        // Unlink the message queues
-        mq_unlink(Req_queue_KasraKai_24);
-        mq_unlink(Rsp_queue_KasraKai_24);
-        mq_unlink(S1_queue_KasraKai_24);
-        mq_unlink(S2_queue_KasraKai_24);
       }
     }
   } 
