@@ -259,27 +259,27 @@ int main (int argc, char * argv[])
         }
         // -> router process
         else{
-          bool final_message_s1 = false;
-          bool final_message_s2 = false;
+          int final_message_s1 = 0;
+          int final_message_s2 = 0;
           // We know that processID for the router currently holds the dealer processID, so we save it
           dealerPID = processID;
 
           // Using the response queue, print the responses from the workers
-          int k = 0;
           while(mq_receive(Rsp_queue_KasraKai_24, (char*) &rsp, sizeof(rsp), NULL) != -1){
             // Check if the message is the final message for each of the workers
             if(rsp.Request_ID == -1 && rsp.result == -1){
-              final_message_s1 = true;
+              final_message_s1++;
             } else if(rsp.Request_ID == -2 && rsp.result == -2) {
-              final_message_s2 = true;
+              final_message_s2++;
             } else{
               printf("%d -> %d\n", rsp.Request_ID, rsp.result);
             }
 
             // Finish execution in case bpoth workers sent a final message
-            if(final_message_s1 && final_message_s2) break;
+            if(final_message_s1 >= N_SERV1 && final_message_s2 >= N_SERV2){
+              break;
+            }
           }
-
           // Wait for the dealer process to be finished
           waitpid(dealerPID, NULL, 0);
           // Release resources for the children processes
@@ -288,6 +288,7 @@ int main (int argc, char * argv[])
           waitpid(service2PID, NULL, 0);
 
 
+          
           // Close the message queues
           mq_close(Req_queue_KasraKai_24);
           mq_close(Rsp_queue_KasraKai_24);
@@ -295,10 +296,10 @@ int main (int argc, char * argv[])
           mq_close(S2_queue_KasraKai_24);
 
           // Unlink the message queues
-          mq_unlink(Req_queue_KasraKai_24);
-          mq_unlink(Rsp_queue_KasraKai_24);
-          mq_unlink(S1_queue_KasraKai_24);
-          mq_unlink(S2_queue_KasraKai_24);
+          mq_unlink(client2dealer_name);
+          mq_unlink(worker2dealer_name);
+          mq_unlink(dealer2worker1_name);
+          mq_unlink(dealer2worker2_name);
         }
       }
     }
