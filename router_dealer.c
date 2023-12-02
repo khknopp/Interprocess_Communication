@@ -44,8 +44,6 @@ int main (int argc, char * argv[])
   // TODO:
     //  * create the message queues (see message_queue_test() in
     //    interprocess_basic.c)
-    //  * create the child processes (see process_test() and
-    //    message_queue_test())
     //  * read requests from the Req queue and transfer them to the workers
     //    with the Sx queues
     //  * read answers from workers in the Rep queue and print them
@@ -119,6 +117,7 @@ int main (int argc, char * argv[])
       // -> worker (doing jobs)
       if(processID == 0){
         // TODO:
+        execlp ("./worker_s1", NULL);
       }
       // -> parent worker
       else {
@@ -153,6 +152,7 @@ int main (int argc, char * argv[])
         // -> worker (doing jobs)
         if(processID == 0){
           // TODO:
+          execlp ("./worker_s2", NULL);
         }
         // -> parent worker
         else {
@@ -165,6 +165,7 @@ int main (int argc, char * argv[])
         // We know that processID for the router currently holds the Service 2 processID, so we save it
         service2PID = processID;
         // TODO:
+        
 
 
         // Release resources for the children processes
@@ -177,6 +178,7 @@ int main (int argc, char * argv[])
   // -> client process
   else {
     // TODO:
+    execlp ("./client", NULL);
   }
 
 
