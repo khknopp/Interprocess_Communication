@@ -34,7 +34,6 @@ mqd_t worker2dealer;
 
 int main (int argc, char * argv[])
 {
-    // TODO:
     // (see message_queue_test() in interprocess_basic.c)
     //  * open the two message queues (whose names are provided in the
     //    arguments)
@@ -45,6 +44,68 @@ int main (int argc, char * argv[])
     //      - write the results to the Rsp message queue
     //    until there are no more tasks to do
     //  * close the message queues
+
+    // Get the name of the worker queue, with the name provided under argument read_queue
+    char* read_queue = argv[1];
+
+    // Get the name of the response queue, with the name provided under argument write_queue
+    char* write_queue = argv[2];
+
+    // Open the read queue
+    mqd_t worker = mq_open(read_queue, O_RDONLY);
+
+    // Check if the read queue was opened successfully
+    if (worker == -1)
+    {
+        perror("mq_open Worker 1");
+        exit(EXIT_FAILURE);
+    }
+
+    // Open the write queue
+    mqd_t response = mq_open(write_queue, O_WRONLY);
+
+    // Check if the write queue was opened successfully
+    if (response == -1)
+    {
+        perror("mq_open Response queue for worker 1");
+        exit(EXIT_FAILURE);
+    }
+
+    // Create a new service 2 message
+    MQ_SERVICE_2_MESSAGE s2;
+
+    // While we can read from the read queue
+    while (mq_receive(worker, (char*) &s2, sizeof(s2), NULL) != -1)
+    {
+        // Create a response message
+        MQ_RESPONSE_MESSAGE response_message;
+
+        // Do the job
+        response_message.Request_ID = s2.Request_ID;
+        response_message.result = service(s2.data);
+
+        // Sleep as defined in the task
+        rsleep(10000);
+
+        // Write the results to the response queue
+        if (mq_send(response, (char*) &response_message, sizeof(response_message), 0) == -1)
+        {
+            perror("mq_send Writing response from worker 2");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Close the read and write queues
+    if (mq_close(worker) == -1)
+    {
+        perror("mq_close Worker 2");
+        exit(EXIT_FAILURE);
+    }
+    if (mq_close(response) == -1)
+    {
+        perror("mq_close Response queue for worker 2");
+        exit(EXIT_FAILURE);
+    }
 
     return(0);
 }

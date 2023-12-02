@@ -31,7 +31,7 @@ typedef struct
 typedef struct
 {
     int                     Request_ID;
-    int                     data;
+    int                     result;
 } MQ_RESPONSE_MESSAGE;
 
 // Defintion of the S1_queue message structure

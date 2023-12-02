@@ -30,7 +30,6 @@ static void rsleep (int t);
 
 int main (int argc, char * argv[])
 {
-    // TODO:
     // (see message_queue_test() in interprocess_basic.c)
     //  * open the message queue (whose name is provided in the
     //    arguments)
@@ -39,6 +38,44 @@ int main (int argc, char * argv[])
     //      - send the request to the Req message queue
     //    until there are no more requests to send
     //  * close the message queue
-    
-    return (0);
+    mqd_t queue;
+    int jobID, data, serviceID;
+
+    // Read the name of the queue from the arguments, with parameter name "queue"
+    char* queue_name = argv[1];
+
+    // Open the queue with the name provided in the arguments
+    queue = mq_open(queue_name, O_WRONLY);
+
+    // Check if the queue was opened successfully
+    if (queue == -1)
+    {
+        perror("mq_open");
+        exit(EXIT_FAILURE);
+    }
+
+    while(getNextRequest(&jobID, &data, &serviceID) == 0)
+    {
+        // Create a new request message
+        MQ_REQUEST_MESSAGE request;
+        request.Request_ID = jobID;
+        request.Service_ID = serviceID;
+        request.data = data;
+
+        // Send the request to the Req message queue
+        if (mq_send(queue, (char*) &request, sizeof(request), 0) == -1)
+        {
+            perror("mq_send Client");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Close the message queue
+    if (mq_close(queue) == -1)
+    {
+        perror("mq_close Client");
+        exit(EXIT_FAILURE);
+    }
+
+    return(0);
 }
