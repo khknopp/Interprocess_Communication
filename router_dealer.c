@@ -62,7 +62,7 @@ void serviceProcess(pid_t processID, int workers, char* read_queue, char* worker
   }
 
   // -> worker (doing jobs)
-  if(processID == 0 && N_SERV1 > 0){
+  if(processID == 0 && workers > 0){
     execlp (worker_name, "read_queue", read_queue, "write_queue", worker2dealer_name, NULL);
 
     // Throw error if the following line is launched
