@@ -30,6 +30,13 @@ static void rsleep (int t);
 
 int main (int argc, char * argv[])
 {
+    // Check if the arguments are valid
+    if(argc != 4 || argv[1] == NULL || argv[3] == NULL)
+    {
+        perror("Invalid arguments for worker_s2");
+        exit(EXIT_FAILURE);
+    }
+
     /* ----------------------------------------------------
        ---------------  Parsing arguments ----------------- 
        ---------------------------------------------------- */
@@ -49,7 +56,7 @@ int main (int argc, char * argv[])
     // Check if the read queue was opened successfully
     if (worker == -1)
     {
-        perror("mq_open Worker 1");
+        perror("mq_open Request queue for worker 1");
         exit(EXIT_FAILURE);
     }
 

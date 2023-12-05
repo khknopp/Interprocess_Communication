@@ -51,11 +51,15 @@ void clientProcess(void) {
 }
 
 void serviceProcess(pid_t processID, int workers, char* read_queue, char* worker_name) {
-  // Create the correct number of workers for S1
+  // Create the correct number of workers for the service
   for(int i = 0; i < workers; i++){
     // Create new process
     processID = fork();
-    // Exit the loop if the process is a child; only fork from the initial worker 1 process
+
+    // Throw error if creating the worker process failed
+    throwError(processID < 0, "fork worker failed");
+
+    // Exit the loop if the process is a child; only fork from the initial worker process
     if(processID == 0){
       break;
     }
@@ -89,10 +93,7 @@ void dealerProcess(mqd_t Req_queue, mqd_t S1_queue, mqd_t S2_queue, mqd_t Rsp_qu
       s1.data = req.data;
 
       // Send the request to the Service 1 queue
-      if(mq_send(S1_queue, (char*) &s1, sizeof(s1), 0) == -1){
-        perror("mq_send Service 1");
-        exit(EXIT_FAILURE);
-      }
+      throwError(mq_send(S1_queue, (char*) &s1, sizeof(s1), 0) == -1, "mq_send Service 1");
     }
     
     // Check if the request is for Service 2
@@ -102,11 +103,8 @@ void dealerProcess(mqd_t Req_queue, mqd_t S1_queue, mqd_t S2_queue, mqd_t Rsp_qu
       s2.Request_ID = req.Request_ID;
       s2.data = req.data;
 
-      // Send the request to the Service 2 queue
-      if(mq_send(S2_queue, (char*) &s2, sizeof(s2), 0) == -1){
-        perror("mq_send Service 2");
-        exit(EXIT_FAILURE);
-      }
+      // Send the request to the Service 2 queue, check for error
+      throwError(mq_send(S2_queue, (char*) &s2, sizeof(s2), 0) == -1, "mq_send Service 2");
     }
 
     // Else final message has been sent, so we break out of the loop
@@ -118,10 +116,7 @@ void dealerProcess(mqd_t Req_queue, mqd_t S1_queue, mqd_t S2_queue, mqd_t Rsp_qu
 
       // Send the request to the Service 1 queue
       for(int i = 0; i < N_SERV1; i++){
-        if(mq_send(S1_queue, (char*) &s1, sizeof(s1), 0) == -1){
-          perror("mq_send Service 1");
-          exit(EXIT_FAILURE);
-        }
+        throwError(mq_send(S1_queue, (char*) &s1, sizeof(s1), 0) == -1, "mq_send Service 1");
       }
       
       // Send a final message to Worker 2
@@ -131,10 +126,7 @@ void dealerProcess(mqd_t Req_queue, mqd_t S1_queue, mqd_t S2_queue, mqd_t Rsp_qu
 
       // Send the request to the Service 2 queue
       for(int i = 0; i < N_SERV2; i++){
-        if(mq_send(S2_queue, (char*) &s2, sizeof(s2), 0) == -1){
-          perror("mq_send Service 2");
-          exit(EXIT_FAILURE);
-        }
+        throwError(mq_send(S2_queue, (char*) &s2, sizeof(s2), 0) == -1, "mq_send Service 2");
       }
       break;
     }
@@ -166,25 +158,31 @@ void routerProcess(pid_t clientPID, pid_t service1PID, pid_t service2PID, pid_t 
       break;
     }
   }
-  // Wait for the dealer process to be finished
-  waitpid(dealerPID, NULL, 0);
+  // Wait for the dealer process to be finished, throw error if it failed
+  throwError(waitpid(dealerPID, NULL, 0) == -1, "waitpid dealer");
 
-  // Release resources for the children processes
-  waitpid(clientPID, NULL, 0);
-  waitpid(service1PID, NULL, 0);
-  waitpid(service2PID, NULL, 0);
+  // Release resources for the children processes, wait for errors
+  throwError(waitpid(clientPID, NULL, 0) == -1, "waitpid client");
+  throwError(waitpid(service1PID, NULL, 0) == -1, "waitpid service 1");
+  throwError(waitpid(service2PID, NULL, 0) == -1, "waitpid service 2");
 
-  // Close the message queues
-  mq_close(Req_queue);
-  mq_close(Rsp_queue);
-  mq_close(S1_queue);
-  mq_close(S2_queue);
+
+  // Throw error if closing the message queues failed
+  throwError(mq_close(Req_queue) == -1, "mq_close Req_queue");
+  throwError(mq_close(Rsp_queue) == -1, "mq_close Rsp_queue");
+  throwError(mq_close(S1_queue) == -1, "mq_close S1_queue");
+  throwError(mq_close(S2_queue) == -1, "mq_close S2_queue");
 
   // Unlink the message queues
-  mq_unlink(client2dealer_name);
-  mq_unlink(worker2dealer_name);
-  mq_unlink(dealer2worker1_name);
-  mq_unlink(dealer2worker2_name);
+  throwError(mq_unlink(client2dealer_name) == -1, "mq_unlink Req_queue");
+  throwError(mq_unlink(worker2dealer_name) == -1, "mq_unlink Rsp_queue");
+  throwError(mq_unlink(dealer2worker1_name) == -1, "mq_unlink S1_queue");
+  throwError(mq_unlink(dealer2worker2_name) == -1, "mq_unlink S2_queue");
+
+  // mq_unlink(client2dealer_name);
+  // mq_unlink(worker2dealer_name);
+  // mq_unlink(dealer2worker1_name);
+  // mq_unlink(dealer2worker2_name);
 }
 
 void createProcesses(mqd_t Req_queue, mqd_t Rsp_queue, mqd_t S1_queue, mqd_t S2_queue) {

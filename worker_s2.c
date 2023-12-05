@@ -34,6 +34,13 @@ mqd_t worker2dealer;
 
 int main (int argc, char * argv[])
 {
+    // Check if the arguments are valid
+    if(argc != 4 || argv[1] == NULL || argv[3] == NULL)
+    {
+        perror("Invalid arguments for worker_s2");
+        exit(EXIT_FAILURE);
+    }
+
     /* ----------------------------------------------------
        ---------------  Parsing arguments ----------------- 
        ---------------------------------------------------- */

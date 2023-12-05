@@ -30,6 +30,13 @@ static void rsleep (int t);
 
 int main (int argc, char * argv[])
 {
+    // Check if the arguments are valid
+    if(argc != 2 || argv[1] == NULL)
+    {
+        perror("Invalid arguments for client");
+        exit(EXIT_FAILURE);
+    }
+
     /* ----------------------------------------------------
        ---------------  Parsing arguments ----------------- 
        ---------------------------------------------------- */
@@ -49,7 +56,7 @@ int main (int argc, char * argv[])
     // Check if the queue was opened successfully
     if (queue == -1)
     {
-        perror("mq_open");
+        perror("mq_open Client message queue");
         exit(EXIT_FAILURE);
     }
 
