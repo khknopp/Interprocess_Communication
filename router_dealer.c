@@ -178,11 +178,6 @@ void routerProcess(pid_t clientPID, pid_t service1PID, pid_t service2PID, pid_t 
   throwError(mq_unlink(worker2dealer_name) == -1, "mq_unlink Rsp_queue");
   throwError(mq_unlink(dealer2worker1_name) == -1, "mq_unlink S1_queue");
   throwError(mq_unlink(dealer2worker2_name) == -1, "mq_unlink S2_queue");
-
-  // mq_unlink(client2dealer_name);
-  // mq_unlink(worker2dealer_name);
-  // mq_unlink(dealer2worker1_name);
-  // mq_unlink(dealer2worker2_name);
 }
 
 void createProcesses(mqd_t Req_queue, mqd_t Rsp_queue, mqd_t S1_queue, mqd_t S2_queue) {
