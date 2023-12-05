@@ -30,20 +30,19 @@ static void rsleep (int t);
 
 int main (int argc, char * argv[])
 {
-    // (see message_queue_test() in interprocess_basic.c)
-    //  * open the message queue (whose name is provided in the
-    //    arguments)
-    //  * repeatingly:
-    //      - get the next job request 
-    //      - send the request to the Req message queue
-    //    until there are no more requests to send
-    //  * close the message queue
+    /* ----------------------------------------------------
+       ---------------  Parsing arguments ----------------- 
+       ---------------------------------------------------- */
     mqd_t queue;
     int jobID, data, serviceID;
 
     // Read the name of the queue from the arguments, with parameter name "queue"
     char* queue_name = argv[1];
 
+
+    /* ----------------------------------------------------
+       ------------------  Reading queue ------------------ 
+       ---------------------------------------------------- */
     // Open the queue with the name provided in the arguments
     queue = mq_open(queue_name, O_WRONLY);
 
@@ -65,9 +64,26 @@ int main (int argc, char * argv[])
         // Send the request to the Req message queue
         if (mq_send(queue, (char*) &request, sizeof(request), 0) == -1)
         {
-            perror("mq_send Client");
+            perror("mq_send Client from message queue");
             exit(EXIT_FAILURE);
         }
+    }
+
+
+    /* ----------------------------------------------------
+       ------------------  Signaling end ------------------ 
+       ---------------------------------------------------- */
+    // Send a message to the Req message queue to indicate that there are no more requests
+    MQ_REQUEST_MESSAGE request;
+    request.Request_ID = -1;
+    request.Service_ID = -1;
+    request.data = -1;
+
+    // Send the request to the Req message queue
+    if (mq_send(queue, (char*) &request, sizeof(request), 0) == -1)
+    {
+        perror("mq_send Client final message");
+        exit(EXIT_FAILURE);
     }
 
     // Close the message queue

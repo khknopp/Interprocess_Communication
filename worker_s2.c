@@ -34,23 +34,19 @@ mqd_t worker2dealer;
 
 int main (int argc, char * argv[])
 {
-    // (see message_queue_test() in interprocess_basic.c)
-    //  * open the two message queues (whose names are provided in the
-    //    arguments)
-    //  * repeatedly:
-    //      - read from the S2 message queue the new job to do
-    //      - wait a random amount of time (e.g. rsleep(10000);)
-    //      - do the job 
-    //      - write the results to the Rsp message queue
-    //    until there are no more tasks to do
-    //  * close the message queues
-
+    /* ----------------------------------------------------
+       ---------------  Parsing arguments ----------------- 
+       ---------------------------------------------------- */
     // Get the name of the worker queue, with the name provided under argument read_queue
     char* read_queue = argv[1];
 
     // Get the name of the response queue, with the name provided under argument write_queue
     char* write_queue = argv[3];
 
+
+    /* ----------------------------------------------------
+       ------------------  Request queue ------------------ 
+       ---------------------------------------------------- */
     // Open the read queue
     mqd_t worker = mq_open(read_queue, O_RDONLY);
 
@@ -61,6 +57,10 @@ int main (int argc, char * argv[])
         exit(EXIT_FAILURE);
     }
 
+
+    /* ----------------------------------------------------
+       -----------------  Response queue ------------------ 
+       ---------------------------------------------------- */
     // Open the write queue
     mqd_t response = mq_open(write_queue, O_WRONLY);
 
@@ -71,6 +71,10 @@ int main (int argc, char * argv[])
         exit(EXIT_FAILURE);
     }
 
+
+    /* ----------------------------------------------------
+       -----------------  Doing requests ------------------ 
+       ---------------------------------------------------- */
     // Create a new service 2 message
     MQ_SERVICE_2_MESSAGE s2;
 
@@ -79,6 +83,20 @@ int main (int argc, char * argv[])
     {
         // Create a response message
         MQ_RESPONSE_MESSAGE response_message;
+
+        // Check if the message is the final message
+        if (s2.Request_ID == -1 && s2.data == -1)
+        {
+            response_message.Request_ID = -2;
+            response_message.result = -2;
+            if (mq_send(response, (char*) &response_message, sizeof(response_message), 0) == -1)
+            {
+                perror("mq_send Writing final response from worker 2");
+                exit(EXIT_FAILURE);
+            }
+            // Break out of the loop
+            break;
+        }
 
         // Do the job
         response_message.Request_ID = s2.Request_ID;
@@ -95,6 +113,10 @@ int main (int argc, char * argv[])
         }
     }
 
+
+    /* ----------------------------------------------------
+       ----------------  Ending operation ----------------- 
+       ---------------------------------------------------- */
     // Close the read and write queues
     if (mq_close(worker) == -1)
     {
